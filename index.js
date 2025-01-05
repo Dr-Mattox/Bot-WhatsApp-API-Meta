@@ -184,7 +184,7 @@ async function consultarInfoOpenAI(tema) {
   const prompt = `Explica detalladamente acerca de: ${tema}`;
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // or "gpt-3.5-turbo", etc.
+      model: "gpt-3.5-turbo", // or "gpt-3.5-turbo", etc.
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
@@ -202,7 +202,7 @@ en formato JSON: [{"pregunta":"...","respuesta":"..."}]
 `;
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
