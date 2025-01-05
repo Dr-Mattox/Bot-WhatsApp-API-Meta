@@ -221,11 +221,11 @@ async function handleIncomingMessage(msg) {
     return;
   }
 
-  // Revisar si hay un estado
+  // Revisar estado
   const userSession = sessions[from] || {};
   const st = userSession.state || "NONE";
 
-  // Estados para Tareas
+  // Estados Tareas
   if (st === "TASK_ADD_DESC") {
     const tareaId = await agregarTarea(textBody);
     await sendWhatsAppMessage(from, `Tarea #${tareaId} agregada: "${textBody}"`);
@@ -248,7 +248,7 @@ async function handleIncomingMessage(msg) {
     return;
   }
 
-  // Estados para Recordatorios
+  // Estados Recordatorios
   if (st === "REM_ADD_DATE") {
     const dt = parseCustomDate(textBody);
     if (!dt) {
@@ -290,7 +290,7 @@ async function handleIncomingMessage(msg) {
     return;
   }
 
-  // Si no coincide nada
+  // Nada coincide
   await sendWhatsAppMessage(from, "No reconozco ese comando. Escribe 'chambea' para ver el menú.");
 }
 
@@ -302,17 +302,14 @@ async function handleButtonReply(from, buttonId) {
 
   // Menú Principal
   if (buttonId === "BTN_TASKS") {
-    // Submenú de Tareas (3 botones)
     await sendTaskMenu(from);
     return;
   }
   if (buttonId === "BTN_REMINDERS") {
-    // Submenú de Recordatorios (3 botones)
     await sendReminderMenu(from);
     return;
   }
   if (buttonId === "BTN_SPECIAL") {
-    // Placeholder
     await sendWhatsAppMessage(from, "No hay comandos especiales por ahora.");
     return;
   }
@@ -367,7 +364,7 @@ async function handleButtonReply(from, buttonId) {
     return;
   }
 
-  // Si no se reconoce
+  // No reconocido
   await sendWhatsAppMessage(from, "Botón no reconocido. Escribe 'chambea' para menú principal.");
 }
 
@@ -436,7 +433,7 @@ async function sendReminderMenu(to) {
 }
 
 /***********************************************
- * 9. Enviar un mensaje interactivo (máx 3 btns)
+ * 9. Enviar mensaje interactivo (máx 3 btns)
  ***********************************************/
 async function sendInteractiveButtons(to, bodyText, buttons) {
   try {
@@ -444,7 +441,7 @@ async function sendInteractiveButtons(to, bodyText, buttons) {
 
     const payload = {
       messaging_product: "whatsapp",
-      to: to,
+      to,
       type: "interactive",
       interactive: {
         type: "button",
@@ -470,7 +467,31 @@ async function sendInteractiveButtons(to, bodyText, buttons) {
 }
 
 /***********************************************
- * 10. parseCustomDate para recordatorios
+ * 10. sendWhatsAppMessage (texto normal)
+ ***********************************************/
+async function sendWhatsAppMessage(to, text) {
+  try {
+    const url = `https://graph.facebook.com/v16.0/${PHONE_NUMBER_ID}/messages`;
+    const payload = {
+      messaging_product: "whatsapp",
+      to,
+      text: { body: text },
+    };
+
+    const response = await axios.post(url, payload, {
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Mensaje enviado:", response.data);
+  } catch (err) {
+    console.error("Error al enviar mensaje:", err.response?.data || err.message);
+  }
+}
+
+/***********************************************
+ * 11. parseCustomDate para recordatorios
  ***********************************************/
 function parseCustomDate(str) {
   const lower = str.toLowerCase();
@@ -526,8 +547,7 @@ function parseCustomDate(str) {
     return now;
   }
 
-  // Formato "yyyy-mm-dd hh:mm"
-  // Ej: "2025-01-10 14:00"
+  // "yyyy-mm-dd hh:mm"
   const reYMD = /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})$/;
   const matchYMD = lower.match(reYMD);
   if (matchYMD) {
@@ -543,8 +563,7 @@ function parseCustomDate(str) {
     }
   }
 
-  // Formato "dd-mm-yyyy hh:mm"
-  // Ej: "10-01-2025 14:00"
+  // "dd-mm-yyyy hh:mm"
   const reDMY = /^(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{2})$/;
   const matchDMY = lower.match(reDMY);
   if (matchDMY) {
