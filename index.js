@@ -6,7 +6,7 @@ const express = require('express');
 const axios = require('axios');
 const mysql = require('mysql2/promise'); 
 const cron = require('node-cron'); // Para recordatorios
-const { Configuration, OpenAIApi } = require('openai'); // Para ChatGPT
+const { Configuration, OpenAIApi } = require("openai"); // Para ChatGPT
 
 // ====== Variables de entorno ======
 const WHATSAPP_TOKEN     = process.env.WHATSAPP_TOKEN;
