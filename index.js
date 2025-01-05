@@ -6,9 +6,9 @@ const axios = require('axios');
 const mysql = require('mysql2/promise'); // <-- para usar MySQL con Promises
 
 // ====== Configuración de variables de entorno ======
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "MiSecreto123"; 
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || "TU_TOKEN_DE_META"; 
-const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID || "523354814195393"; 
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 // Cambia por tu phone_number_id real.
 // En logs viste algo como "phone_number_id": "523354814195393".
 
@@ -23,12 +23,12 @@ const MY_WHATSAPP_NUMBER = "529983214356";
    (puede que MYSQLPORT no sea necesaria si es el puerto por defecto 3306).
 */
 const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  database: process.env.MYSQLDATABASE,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  port: process.env.MYSQLPORT || 3306, // si tu plugin define un puerto distinto, úsalo
-});
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
+    port: process.env.MYSQLPORT || 3306
+  });
 
 // Función para inicializar la tabla "tareas"
 async function initDB() {
