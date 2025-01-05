@@ -17,6 +17,9 @@ const OPENAI_API_KEY     = process.env.OPENAI_API_KEY;
 // Número personal que usará el bot
 const MY_WHATSAPP_NUMBER = "529983214356"; 
 
+
+console.log("openai package version =>", require("openai/package.json").version);
+
 // ====== Configuración de OpenAI (ChatGPT) ======
 const openAIConfig = new Configuration({
   apiKey: OPENAI_API_KEY,
