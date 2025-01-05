@@ -2,6 +2,7 @@
   "name": "bot-de-whatsapp-con-api-de-meta",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm list openai --depth=0 && node index.js",
