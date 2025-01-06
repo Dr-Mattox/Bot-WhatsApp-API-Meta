@@ -8,7 +8,6 @@ import axios from "axios";
 import mysql from "mysql2/promise";
 import cron from "node-cron";
 import { format } from "date-fns";
-const { utcToZonedTime } = require("date-fns-tz");
 
 
 /***********************************************
@@ -129,6 +128,27 @@ const frasesComunes = {
   "te quiero": "¡Yo también te quiero un montón! ❤️"
 };
 
+function convertToCancunTime(date) {
+  const options = { timeZone: "America/Cancun", hour12: false };
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    ...options,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = formatter.formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return new Date(
+    `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
+  );
+}
+
+
 
 /***********************************************
  * 4. Lógica para Recordatorios + node-cron
@@ -147,7 +167,7 @@ async function listarRecordatoriosPendientes() {
   `);
 
   return rows.map((row) => {
-    const localTime = utcToZonedTime(row.fecha_hora, "America/Cancun");
+    const localTime = convertToCancunTime(row.fecha_hora);
     return {
       ...row,
       fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"),
