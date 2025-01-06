@@ -346,7 +346,7 @@ if (st === "REM_ADD_TIME") {
 }
 
 if (st === "REM_ADD_DESC") {
-  const desc = textBody;
+  const desc = msg.text?.body?.trim(); // Preservar mayúsculas y minúsculas.
   const dt = sessions[from].tempDate;
   if (!dt) {
     await sendWhatsAppMessage(from, "No hay fecha y hora guardadas. Cancelo la acción.");
@@ -359,6 +359,7 @@ if (st === "REM_ADD_DESC") {
   sessions[from].state = "NONE";
   return;
 }
+
 
   if (st === "REM_DEL_ID") {
     const idNum = parseInt(textBody, 10);
@@ -596,26 +597,26 @@ function parseCustomDate(str) {
     return now;
   }
 
-  const dateMatch = lower.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const dateMatch = lower.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
   if (dateMatch) {
-    const [, day, month, year] = dateMatch;
-    return new Date(`${year}-${month}-${day}`);
+    const [day, month, year] = dateMatch[0].split("/");
+    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
   }
 
   return null;
 }
 
 function parseCustomTime(str) {
-  const now = new Date();
   const lower = str.toLowerCase();
+  const now = new Date();
 
   const timeMatch = lower.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
   if (timeMatch) {
-    let [, hours, minutes, period] = timeMatch;
+    let [_, hours, minutes, period] = timeMatch;
     hours = parseInt(hours, 10);
     minutes = parseInt(minutes, 10);
-    if (period.toLowerCase() === "pm" && hours < 12) hours += 12;
-    if (period.toLowerCase() === "am" && hours === 12) hours = 0;
+    if (period === "pm" && hours < 12) hours += 12;
+    if (period === "am" && hours === 12) hours = 0;
     now.setHours(hours, minutes, 0, 0);
     return now;
   }
