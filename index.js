@@ -509,7 +509,7 @@ async function sendReminderMenu(to) {
     },
     {
       type: "reply",
-      reply: { id: "R_DEL", title: "Eliminar Recordatorio" },
+      reply: { id: "R_DEL", title: "Elim Recordatorio" },
     },
   ];
   await sendInteractiveButtons(to, bodyText, buttons);
