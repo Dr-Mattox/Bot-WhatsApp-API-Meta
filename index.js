@@ -497,7 +497,7 @@ async function sendTaskMenu(to) {
 
 // Menú Recordatorios: 3 botones
 async function sendReminderMenu(to) {
-  const bodyText = "Opciones Recordatorios";
+  const bodyText = "Menu Recordatorios";
   const buttons = [
     {
       type: "reply",
