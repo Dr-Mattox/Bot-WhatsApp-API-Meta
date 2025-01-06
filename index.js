@@ -125,7 +125,9 @@ const frasesComunes = {
   "buenas noches": "¡Buenas noches! Que descanses mucho 🌙",
   "nos vemos": "¡Hasta luego! Cuídate mucho 😊",
   "cómo estás?": "¡Estoy aquí para ayudarte! ¿Y tú cómo estás? 😊",
-  "te quiero": "¡Yo también te quiero un montón! ❤️"
+  "te quiero": "¡Yo también te quiero un montón! ❤️",
+  "hola": "¡Hola! Qué gusto saludarte 😊",
+  "adiós": "Adiós, ¡cuídate mucho! 🌟"
 };
 
 function convertToCancunTime(date) {
@@ -499,11 +501,11 @@ async function sendReminderMenu(to) {
   const buttons = [
     {
       type: "reply",
-      reply: { id: "R_LIST", title: "Listar Recordatorios" },
+      reply: { id: "R_LIST", title: "Ver Recordatorios" },
     },
     {
       type: "reply",
-      reply: { id: "R_ADD", title: "Agregar Recordatorio" },
+      reply: { id: "R_ADD", title: "Nuevo Recordatorio" },
     },
     {
       type: "reply",
