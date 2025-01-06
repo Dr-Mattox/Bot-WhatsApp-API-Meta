@@ -7,6 +7,8 @@ import express from "express";
 import axios from "axios";
 import mysql from "mysql2/promise";
 import cron from "node-cron";
+import { format } from "date-fns";
+import { utcToZonedTime } from "date-fns-tz";
 
 /***********************************************
  * 1. Variables de entorno y configuración
@@ -90,6 +92,43 @@ async function completarTarea(id) {
   return result.affectedRows;
 }
 
+// Función para obtener mensajes bonitos aleatorios
+const buenosDiasMensajes = [
+  "Buenos días! Que tengas un día increíble 🌞",
+  "¡Despierta y brilla! Hoy es un gran día para ti 🌟",
+  "Buenos días, ¡no olvides sonreír! 😊"
+];
+
+const buenasNochesMensajes = [
+  "Buenas noches, que descanses y tengas dulces sueños 🌙",
+  "Que el sueño te lleve a un mundo de paz. Buenas noches ✨",
+  "Buenas noches, recarga energías para un día maravilloso mañana 🌌"
+];
+
+// Tareas cron para enviar mensajes de buenos días y buenas noches
+cron.schedule("0 10 * * *", async () => {
+  const mensaje = buenosDiasMensajes[Math.floor(Math.random() * buenosDiasMensajes.length)];
+  await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
+});
+
+cron.schedule("0 22 * * *", async () => {
+  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenasNochesMensajes.length)];
+  await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
+});
+
+// Respuestas a frases comunes
+const frasesComunes = {
+  "descansa": "Gracias, ¡tú también descansa mucho! 🌙",
+  "te amo": "¡Yo también te aprecio mucho! ❤️",
+  "duerme rico": "¡Duerme súper bien y que tengas sueños lindos! ✨",
+  "buenos días": "¡Buenos días! Que hoy sea un día espectacular 🌟",
+  "buenas noches": "¡Buenas noches! Que descanses mucho 🌙",
+  "nos vemos": "¡Hasta luego! Cuídate mucho 😊",
+  "cómo estás?": "¡Estoy aquí para ayudarte! ¿Y tú cómo estás? 😊",
+  "te quiero": "¡Yo también te quiero un montón! ❤️"
+};
+
+
 /***********************************************
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
@@ -103,12 +142,16 @@ async function agregarRecordatorio(desc, fechaHora) {
 
 async function listarRecordatoriosPendientes() {
   const [rows] = await pool.query(`
-    SELECT * 
-    FROM recordatorios
-    WHERE enviado=0
-    ORDER BY fecha_hora ASC
+    SELECT * FROM recordatorios WHERE enviado = 0 ORDER BY fecha_hora ASC
   `);
-  return rows;
+
+  return rows.map((row) => {
+    const localTime = utcToZonedTime(row.fecha_hora, "America/Cancun");
+    return {
+      ...row,
+      fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"),
+    };
+  });
 }
 
 async function eliminarRecordatorio(id) {
@@ -195,7 +238,7 @@ app.listen(PORT, () => {
 async function handleIncomingMessage(msg) {
   const from = msg.from;
   const type = msg.type;
-  const textBody = msg.text?.body?.trim() || "";
+  const textBody = msg.text?.body?.trim().toLowerCase();
 
   // Filtrar si quieres
   if (from !== MY_WHATSAPP_NUMBER) {
@@ -203,6 +246,10 @@ async function handleIncomingMessage(msg) {
     return;
   }
 
+  if (frasesComunes[textBody]) {
+    await sendWhatsAppMessage(from, frasesComunes[textBody]);
+    return;
+  }
   // Si es un reply de botón (interactive)
   if (type === "interactive") {
     if (msg.interactive.type === "button_reply") {
@@ -256,6 +303,19 @@ async function handleIncomingMessage(msg) {
       return;
     }
     sessions[from].tempDate = dt;
+    sessions[from].state = "REM_ADD_TIME";
+    await sendWhatsAppMessage(from, "¿A qué hora? (ej: 3:25 pm o en 20 minutos)");
+    return;
+  }
+  if (st === "REM_ADD_TIME") {
+    const tempDate = sessions[from].tempDate;
+    const time = parseCustomTime(textBody);
+    if (!time) {
+      await sendWhatsAppMessage(from, "Formato de hora no reconocido. Intenta otra vez o escribe 'chambea' para cancelar.");
+      return;
+    }
+    tempDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    sessions[from].tempDate = tempDate;
     sessions[from].state = "REM_ADD_DESC";
     await sendWhatsAppMessage(from, "¿Cuál es la descripción del recordatorio?");
     return;
@@ -264,13 +324,13 @@ async function handleIncomingMessage(msg) {
     const desc = textBody;
     const dt = sessions[from].tempDate;
     if (!dt) {
-      await sendWhatsAppMessage(from, "No hay fecha guardada. Cancelo la acción.");
+      await sendWhatsAppMessage(from, "No hay fecha y hora guardadas. Cancelo la acción.");
       sessions[from].state = "NONE";
       return;
     }
-    const iso = dt.toISOString().slice(0,19).replace("T"," ");
+    const iso = dt.toISOString().slice(0, 19).replace("T", " ");
     const newId = await agregarRecordatorio(desc, iso);
-    await sendWhatsAppMessage(from, `Recordatorio #${newId} para ${iso}: "${desc}"`);
+    await sendWhatsAppMessage(from, `Recordatorio #${newId} para ${format(dt, "dd/MM/yyyy hh:mm a")}: "${desc}"`);
     sessions[from].state = "NONE";
     return;
   }
@@ -418,15 +478,15 @@ async function sendReminderMenu(to) {
   const buttons = [
     {
       type: "reply",
-      reply: { id: "R_LIST", title: "Listar" },
+      reply: { id: "R_LIST", title: "Listar Recordatorios" },
     },
     {
       type: "reply",
-      reply: { id: "R_ADD", title: "Agregar" },
+      reply: { id: "R_ADD", title: "Agregar Recordatorio" },
     },
     {
       type: "reply",
-      reply: { id: "R_DEL", title: "Eliminar" },
+      reply: { id: "R_DEL", title: "Eliminar Recordatorio" },
     },
   ];
   await sendInteractiveButtons(to, bodyText, buttons);
@@ -493,92 +553,55 @@ async function sendWhatsAppMessage(to, text) {
 /***********************************************
  * 11. parseCustomDate para recordatorios
  ***********************************************/
+// Corregir y mejorar recordatorios
 function parseCustomDate(str) {
   const lower = str.toLowerCase();
-
-  // "hoy"
+  const now = new Date();
+  
   if (lower === "hoy") {
-    const now = new Date();
-    now.setSeconds(0,0);
     return now;
-  }
-  // "mañana"
-  if (lower === "mañana") {
-    const now = new Date();
+  } else if (lower === "mañana") {
     now.setDate(now.getDate() + 1);
-    now.setSeconds(0,0);
     return now;
-  }
-  // "pasadomañana"
-  if (lower === "pasadomañana") {
-    const now = new Date();
+  } else if (lower === "pasado mañana") {
     now.setDate(now.getDate() + 2);
-    now.setSeconds(0,0);
     return now;
   }
 
-  // "en X dias"
-  const enXdias = lower.match(/^en\s+(\d+)\s*d(i|í)as?$/);
-  if (enXdias) {
-    const days = parseInt(enXdias[1],10);
-    const now = new Date();
-    now.setDate(now.getDate() + days);
-    now.setSeconds(0,0);
-    return now;
-  }
-
-  // "en X horas"
-  const enXhours = lower.match(/^en\s+(\d+)\s*h(oras?)?$/);
-  if (enXhours) {
-    const hrs = parseInt(enXhours[1],10);
-    const now = new Date();
-    now.setHours(now.getHours() + hrs);
-    now.setSeconds(0,0);
-    return now;
-  }
-
-  // "en X min"
-  const enXmin = lower.match(/^en\s+(\d+)\s*min(utos?)?$/);
-  if (enXmin) {
-    const mins = parseInt(enXmin[1],10);
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + mins);
-    now.setSeconds(0,0);
-    return now;
-  }
-
-  // "yyyy-mm-dd hh:mm"
-  const reYMD = /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})$/;
-  const matchYMD = lower.match(reYMD);
-  if (matchYMD) {
-    const yyyy = matchYMD[1];
-    const mm = matchYMD[2].padStart(2,"0");
-    const dd = matchYMD[3].padStart(2,"0");
-    const hh = matchYMD[4].padStart(2,"0");
-    const mn = matchYMD[5].padStart(2,"0");
-    const iso = `${yyyy}-${mm}-${dd}T${hh}:${mn}:00`;
-    const dt = new Date(iso);
-    if (!isNaN(dt.getTime())) {
-      return dt;
+  const match = lower.match(/^en (\d+) (minutos?|horas?)$/);
+  if (match) {
+    const value = parseInt(match[1], 10);
+    if (lower.includes("minuto")) {
+      now.setMinutes(now.getMinutes() + value);
+    } else {
+      now.setHours(now.getHours() + value);
     }
+    return now;
   }
 
-  // "dd-mm-yyyy hh:mm"
-  const reDMY = /^(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{2})$/;
-  const matchDMY = lower.match(reDMY);
-  if (matchDMY) {
-    const dd = matchDMY[1].padStart(2,"0");
-    const mm = matchDMY[2].padStart(2,"0");
-    const yyyy = matchDMY[3];
-    const hh = matchDMY[4].padStart(2,"0");
-    const mn = matchDMY[5].padStart(2,"0");
-    const iso = `${yyyy}-${mm}-${dd}T${hh}:${mn}:00`;
-    const dt = new Date(iso);
-    if (!isNaN(dt.getTime())) {
-      return dt;
+  const parts = lower.match(/^(\d{2}) (\d{2}) (\d{4})$/);
+  if (parts) {
+    const [_, day, month, year] = parts;
+    return new Date(`${year}-${month}-${day}`);
+  }
+
+  return null;
+}
+
+function parseCustomTime(str) {
+  const match = str.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (match) {
+    let [_, hours, minutes, period] = match;
+    hours = parseInt(hours, 10);
+    minutes = parseInt(minutes, 10);
+    if (period.toLowerCase() === "pm" && hours < 12) {
+      hours += 12;
+    } else if (period.toLowerCase() === "am" && hours === 12) {
+      hours = 0;
     }
+    const time = new Date();
+    time.setHours(hours, minutes, 0, 0);
+    return time;
   }
-
-  // No se pudo parsear
   return null;
 }
