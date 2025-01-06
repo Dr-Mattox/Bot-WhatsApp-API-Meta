@@ -105,16 +105,21 @@ const buenasNochesMensajes = [
   "Buenas noches, recarga energías para un día maravilloso mañana 🌌"
 ];
 
-// Tareas cron para enviar mensajes de buenos días y buenas noches
+// Ajustar cron jobs para mensajes
 cron.schedule("0 10 * * *", async () => {
   const mensaje = buenosDiasMensajes[Math.floor(Math.random() * buenosDiasMensajes.length)];
   await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
+}, {
+  timezone: "America/Cancun"
 });
 
 cron.schedule("0 22 * * *", async () => {
   const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenasNochesMensajes.length)];
   await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
+}, {
+  timezone: "America/Cancun"
 });
+
 
 // Respuestas a frases comunes
 const frasesComunes = {
@@ -432,7 +437,7 @@ if (buttonId === "R_LIST") {
   } else {
     let msg = "Recordatorios pendientes:\n";
     recs.forEach((r, index) => {
-      msg += `${index + 1}. ${r.descripcion} (${r.fecha_hora})\n`;
+      msg += `${index + 1}. ${r.descripcion} (${format(new Date(r.fecha_hora), "dd/MM/yyyy HH:mm")})\n`;
     });
     await sendWhatsAppMessage(from, msg);
   }
@@ -450,7 +455,6 @@ if (buttonId === "R_DEL") {
   await sendWhatsAppMessage(from, "Indica el número del recordatorio en la lista para eliminar:");
   return;
 }
-
 
   // No reconocido
   await sendWhatsAppMessage(from, "Botón no reconocido. Escribe 'chambea' para menú principal.");
