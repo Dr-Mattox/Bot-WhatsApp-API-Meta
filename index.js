@@ -122,6 +122,7 @@ const frasesComunes = {
   "te amo": "¡Yo también te aprecio mucho! ❤️",
   "duerme rico": "¡Duerme súper bien y que tengas sueños lindos! ✨",
   "buenos días": "¡Buenos días! Que hoy sea un día espectacular 🌟",
+  "buenas tardes": "¡Buenas tardes! ¿Cómo va tu día? 😁",
   "buenas noches": "¡Buenas noches! Que descanses mucho 🌙",
   "nos vemos": "¡Hasta luego! Cuídate mucho 😊",
   "cómo estás?": "¡Estoy aquí para ayudarte! ¿Y tú cómo estás? 😊",
