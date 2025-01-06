@@ -8,7 +8,8 @@ import axios from "axios";
 import mysql from "mysql2/promise";
 import cron from "node-cron";
 import { format } from "date-fns";
-import { utcToZonedTime } from "date-fns-tz";
+const { utcToZonedTime } = require("date-fns-tz");
+
 
 /***********************************************
  * 1. Variables de entorno y configuración
