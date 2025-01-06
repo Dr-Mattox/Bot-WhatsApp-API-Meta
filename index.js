@@ -318,45 +318,48 @@ async function handleIncomingMessage(msg) {
     return;
   }
 
-  // Estados Recordatorios
-  if (st === "REM_ADD_DATE") {
-    const dt = parseCustomDate(textBody);
-    if (!dt) {
-      await sendWhatsAppMessage(from, "Formato de fecha/hora no reconocido. Intenta otra vez o escribe 'chambea' para cancelar.");
-      return;
-    }
-    sessions[from].tempDate = dt;
-    sessions[from].state = "REM_ADD_TIME";
-    await sendWhatsAppMessage(from, "¿A qué hora? (ej: 3:25 pm o en 20 minutos)");
+  // Manejo de mensajes en estados para recordatorios
+if (st === "REM_ADD_DATE") {
+  const date = parseCustomDate(textBody);
+  if (!date) {
+    await sendWhatsAppMessage(from, "Formato de fecha no reconocido. Intenta con 'hoy', 'mañana' o '10/01/2025'.");
     return;
   }
-  if (st === "REM_ADD_TIME") {
-    const tempDate = sessions[from].tempDate;
-    const time = parseCustomTime(textBody);
-    if (!time) {
-      await sendWhatsAppMessage(from, "Formato de hora no reconocido. Intenta otra vez o escribe 'chambea' para cancelar.");
-      return;
-    }
-    tempDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
-    sessions[from].tempDate = tempDate;
-    sessions[from].state = "REM_ADD_DESC";
-    await sendWhatsAppMessage(from, "¿Cuál es la descripción del recordatorio?");
+  sessions[from].tempDate = date;
+  sessions[from].state = "REM_ADD_TIME";
+  await sendWhatsAppMessage(from, "¿A qué hora? (ej: 3:25 pm o en 20 minutos)");
+  return;
+}
+
+if (st === "REM_ADD_TIME") {
+  const tempDate = sessions[from].tempDate;
+  const time = parseCustomTime(textBody);
+  if (!time) {
+    await sendWhatsAppMessage(from, "Formato de hora no reconocido. Intenta con '3:25 pm' o 'en 20 minutos'.");
     return;
   }
-  if (st === "REM_ADD_DESC") {
-    const desc = textBody;
-    const dt = sessions[from].tempDate;
-    if (!dt) {
-      await sendWhatsAppMessage(from, "No hay fecha y hora guardadas. Cancelo la acción.");
-      sessions[from].state = "NONE";
-      return;
-    }
-    const iso = dt.toISOString().slice(0, 19).replace("T", " ");
-    const newId = await agregarRecordatorio(desc, iso);
-    await sendWhatsAppMessage(from, `Recordatorio #${newId} para ${format(dt, "dd/MM/yyyy hh:mm a")}: "${desc}"`);
+  tempDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
+  sessions[from].tempDate = tempDate;
+  sessions[from].state = "REM_ADD_DESC";
+  await sendWhatsAppMessage(from, "¿Cuál es la descripción del recordatorio?");
+  return;
+}
+
+if (st === "REM_ADD_DESC") {
+  const desc = textBody;
+  const dt = sessions[from].tempDate;
+  if (!dt) {
+    await sendWhatsAppMessage(from, "No hay fecha y hora guardadas. Cancelo la acción.");
     sessions[from].state = "NONE";
     return;
   }
+  const iso = dt.toISOString().slice(0, 19).replace("T", " ");
+  const newId = await agregarRecordatorio(desc, iso);
+  await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy hh:mm a")}`);
+  sessions[from].state = "NONE";
+  return;
+}
+
   if (st === "REM_DEL_ID") {
     const idNum = parseInt(textBody, 10);
     if (isNaN(idNum)) {
@@ -423,29 +426,31 @@ async function handleButtonReply(from, buttonId) {
   }
 
   // Submenú Recordatorios
-  if (buttonId === "R_LIST") {
-    const recs = await listarRecordatoriosPendientes();
-    if (recs.length === 0) {
-      await sendWhatsAppMessage(from, "No hay recordatorios pendientes.");
-    } else {
-      let msg = "Recordatorios pendientes:\n";
-      recs.forEach(r => {
-        msg += `#${r.id} -> ${r.descripcion} (${r.fecha_hora})\n`;
-      });
-      await sendWhatsAppMessage(from, msg);
-    }
-    return;
+if (buttonId === "R_LIST") {
+  const recs = await listarRecordatoriosPendientes();
+  if (recs.length === 0) {
+    await sendWhatsAppMessage(from, "No hay recordatorios pendientes.");
+  } else {
+    let msg = "Recordatorios pendientes:\n";
+    recs.forEach(r => {
+      msg += `- ${r.descripcion} (${r.fecha_hora})\n`;
+    });
+    await sendWhatsAppMessage(from, msg);
   }
-  if (buttonId === "R_ADD") {
-    sessions[from] = { state: "REM_ADD_DATE" };
-    await sendWhatsAppMessage(from, "¿Para cuándo es el recordatorio? (ej: hoy, mañana, 2025-01-10 14:00, en 2 dias, en 30 min, etc.)");
-    return;
-  }
-  if (buttonId === "R_DEL") {
-    sessions[from] = { state: "REM_DEL_ID" };
-    await sendWhatsAppMessage(from, "¿Cuál es el ID del recordatorio a eliminar?");
-    return;
-  }
+  return;
+}
+
+if (buttonId === "R_ADD") {
+  sessions[from] = { state: "REM_ADD_DATE" };
+  await sendWhatsAppMessage(from, "¿Para qué día es el recordatorio? (ej: hoy, mañana, pasado mañana, 10/01/2025)");
+  return;
+}
+
+if (buttonId === "R_DEL") {
+  sessions[from] = { state: "REM_DEL_ID" };
+  await sendWhatsAppMessage(from, "¿Cuál es el ID del recordatorio a eliminar?");
+  return;
+}
 
   // No reconocido
   await sendWhatsAppMessage(from, "Botón no reconocido. Escribe 'chambea' para menú principal.");
@@ -576,11 +581,11 @@ async function sendWhatsAppMessage(to, text) {
 /***********************************************
  * 11. parseCustomDate para recordatorios
  ***********************************************/
-// Corregir y mejorar recordatorios
+// Corregir y mejorar parseCustomDate y parseCustomTime
 function parseCustomDate(str) {
   const lower = str.toLowerCase();
   const now = new Date();
-  
+
   if (lower === "hoy") {
     return now;
   } else if (lower === "mañana") {
@@ -591,20 +596,9 @@ function parseCustomDate(str) {
     return now;
   }
 
-  const match = lower.match(/^en (\d+) (minutos?|horas?)$/);
-  if (match) {
-    const value = parseInt(match[1], 10);
-    if (lower.includes("minuto")) {
-      now.setMinutes(now.getMinutes() + value);
-    } else {
-      now.setHours(now.getHours() + value);
-    }
-    return now;
-  }
-
-  const parts = lower.match(/^(\d{2}) (\d{2}) (\d{4})$/);
-  if (parts) {
-    const [_, day, month, year] = parts;
+  const dateMatch = lower.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dateMatch) {
+    const [, day, month, year] = dateMatch;
     return new Date(`${year}-${month}-${day}`);
   }
 
@@ -612,19 +606,28 @@ function parseCustomDate(str) {
 }
 
 function parseCustomTime(str) {
-  const match = str.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
-  if (match) {
-    let [_, hours, minutes, period] = match;
+  const now = new Date();
+  const lower = str.toLowerCase();
+
+  const timeMatch = lower.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
+  if (timeMatch) {
+    let [, hours, minutes, period] = timeMatch;
     hours = parseInt(hours, 10);
     minutes = parseInt(minutes, 10);
-    if (period.toLowerCase() === "pm" && hours < 12) {
-      hours += 12;
-    } else if (period.toLowerCase() === "am" && hours === 12) {
-      hours = 0;
-    }
-    const time = new Date();
-    time.setHours(hours, minutes, 0, 0);
-    return time;
+    if (period.toLowerCase() === "pm" && hours < 12) hours += 12;
+    if (period.toLowerCase() === "am" && hours === 12) hours = 0;
+    now.setHours(hours, minutes, 0, 0);
+    return now;
   }
+
+  const relativeMatch = lower.match(/^en\s+(\d+)\s+(minutos?|horas?)$/);
+  if (relativeMatch) {
+    const [, value, unit] = relativeMatch;
+    const intValue = parseInt(value, 10);
+    if (unit.startsWith("minuto")) now.setMinutes(now.getMinutes() + intValue);
+    else now.setHours(now.getHours() + intValue);
+    return now;
+  }
+
   return null;
 }
