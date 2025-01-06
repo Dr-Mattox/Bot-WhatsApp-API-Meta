@@ -296,13 +296,14 @@ async function handleIncomingMessage(msg) {
   const userSession = sessions[from] || {};
   const st = userSession.state || "NONE";
 
-  // Estados Tareas
-  if (st === "TASK_ADD_DESC") {
-    const tareaId = await agregarTarea(textBody);
-    await sendWhatsAppMessage(from, `Tarea #${tareaId} agregada: "${textBody}"`);
-    sessions[from].state = "NONE";
-    return;
-  }
+  // Estados para tareas
+if (st === "TASK_ADD_DESC") {
+  const desc = msg.text?.body?.trim(); // Preservar mayúsculas y minúsculas.
+  const tareaId = await agregarTarea(desc);
+  await sendWhatsAppMessage(from, `Tarea #${tareaId} agregada: "${desc}"`);
+  sessions[from].state = "NONE";
+  return;
+}
   if (st === "TASK_COMPLETE_ID") {
     const idNum = parseInt(textBody, 10);
     if (isNaN(idNum)) {
@@ -354,29 +355,25 @@ if (st === "REM_ADD_DESC") {
     sessions[from].state = "NONE";
     return;
   }
-  const iso = dt.toISOString().slice(0, 19).replace("T", " ");
-  const newId = await agregarRecordatorio(desc, iso);
-  await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy hh:mm a")}`);
+  const newId = await agregarRecordatorio(desc, dt.toISOString().slice(0, 19).replace("T", " "));
+  await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy HH:mm")}`);
   sessions[from].state = "NONE";
   return;
 }
 
-
-  if (st === "REM_DEL_ID") {
-    const idNum = parseInt(textBody, 10);
-    if (isNaN(idNum)) {
-      await sendWhatsAppMessage(from, "ID inválido. Cancelo la acción.");
-    } else {
-      const del = await eliminarRecordatorio(idNum);
-      if (del > 0) {
-        await sendWhatsAppMessage(from, `Recordatorio #${idNum} eliminado.`);
-      } else {
-        await sendWhatsAppMessage(from, "No se encontró ese recordatorio o ya fue enviado/eliminado.");
-      }
-    }
-    sessions[from].state = "NONE";
+if (st === "REM_DEL_INDEX") {
+  const index = parseInt(textBody, 10) - 1;
+  const recs = await listarRecordatoriosPendientes();
+  if (isNaN(index) || index < 0 || index >= recs.length) {
+    await sendWhatsAppMessage(from, "Número inválido. Intenta de nuevo o escribe 'chambea' para cancelar.");
     return;
   }
+  const recToDelete = recs[index];
+  await eliminarRecordatorio(recToDelete.id);
+  await sendWhatsAppMessage(from, `Recordatorio eliminado: ${recToDelete.descripcion}`);
+  sessions[from].state = "NONE";
+  return;
+}
 
   // Nada coincide
   await sendWhatsAppMessage(from, "No reconozco ese comando. Escribe 'chambea' para ver el menú.");
@@ -434,8 +431,8 @@ if (buttonId === "R_LIST") {
     await sendWhatsAppMessage(from, "No hay recordatorios pendientes.");
   } else {
     let msg = "Recordatorios pendientes:\n";
-    recs.forEach(r => {
-      msg += `- ${r.descripcion} (${r.fecha_hora})\n`;
+    recs.forEach((r, index) => {
+      msg += `${index + 1}. ${r.descripcion} (${r.fecha_hora})\n`;
     });
     await sendWhatsAppMessage(from, msg);
   }
@@ -449,10 +446,11 @@ if (buttonId === "R_ADD") {
 }
 
 if (buttonId === "R_DEL") {
-  sessions[from] = { state: "REM_DEL_ID" };
-  await sendWhatsAppMessage(from, "¿Cuál es el ID del recordatorio a eliminar?");
+  sessions[from] = { state: "REM_DEL_INDEX" };
+  await sendWhatsAppMessage(from, "Indica el número del recordatorio en la lista para eliminar:");
   return;
 }
+
 
   // No reconocido
   await sendWhatsAppMessage(from, "Botón no reconocido. Escribe 'chambea' para menú principal.");
