@@ -155,14 +155,15 @@ async function listarRecordatoriosPendientes() {
     SELECT * FROM recordatorios WHERE enviado = 0 ORDER BY fecha_hora ASC
   `);
 
-  // Formatear la fecha directamente sin aplicar ajustes adicionales
+  // Formatear las horas directamente
   return rows.map((row) => {
     return {
       ...row,
-      fecha_hora: format(new Date(row.fecha_hora.replace(' ', 'T')), "dd/MM/yyyy hh:mm a"),
+      fecha_hora: format(row.fecha_hora, "dd/MM/yyyy hh:mm a"),
     };
   });
 }
+
 
 async function eliminarRecordatorio(id) {
   const [result] = await pool.query(
