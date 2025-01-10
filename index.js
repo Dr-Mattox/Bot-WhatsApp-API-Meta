@@ -150,21 +150,19 @@ async function agregarRecordatorio(desc, fechaHora) {
   return result.insertId;
 }
 
-
 async function listarRecordatoriosPendientes() {
   const [rows] = await pool.query(`
     SELECT * FROM recordatorios WHERE enviado = 0 ORDER BY fecha_hora ASC
   `);
 
-  // Formatear las horas sin ajustes adicionales
+  // Formatear la fecha directamente sin aplicar ajustes adicionales
   return rows.map((row) => {
     return {
       ...row,
-      fecha_hora: format(new Date(row.fecha_hora), "dd/MM/yyyy hh:mm a"),
+      fecha_hora: format(new Date(row.fecha_hora.replace(' ', 'T')), "dd/MM/yyyy hh:mm a"),
     };
   });
 }
-
 
 async function eliminarRecordatorio(id) {
   const [result] = await pool.query(
