@@ -155,11 +155,15 @@ async function listarRecordatoriosPendientes() {
     SELECT * FROM recordatorios WHERE enviado = 0 ORDER BY fecha_hora ASC
   `);
 
-  // Usar directamente la hora de la base de datos sin ajustes adicionales
-  return rows.map((row) => ({
-    ...row,
-    fecha_hora: format(new Date(row.fecha_hora), "dd/MM/yyyy hh:mm a"), // No se añade ni resta tiempo aquí
-  }));
+  // Restar 5 horas al leer de la base de datos
+  return rows.map((row) => {
+    const adjustedTime = new Date(row.fecha_hora);
+    adjustedTime.setHours(adjustedTime.getHours() - 5); // Resta 5 horas
+    return {
+      ...row,
+      fecha_hora: format(adjustedTime, "dd/MM/yyyy hh:mm a"),
+    };
+  });
 }
 
 
