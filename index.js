@@ -114,7 +114,7 @@ cron.schedule("0 10 * * *", async () => {
 });
 
 cron.schedule("0 22 * * *", async () => {
-  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenasNochesMensajes.length)];
+  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenosNochesMensajes.length)];
   await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
 }, {
   timezone: "America/Cancun"
@@ -301,7 +301,7 @@ async function handleIncomingMessage(msg) {
   const userSession = sessions[from] || {};
   const st = userSession.state || "NONE";
 
-  // Estados para tareas
+ // Estados para tareas
 if (st === "TASK_ADD_DESC") {
   const desc = msg.text?.body?.trim(); // Preservar mayúsculas y minúsculas.
   const tareaId = await agregarTarea(desc);
@@ -309,6 +309,7 @@ if (st === "TASK_ADD_DESC") {
   sessions[from].state = "NONE";
   return;
 }
+
   if (st === "TASK_COMPLETE_ID") {
     const idNum = parseInt(textBody, 10);
     if (isNaN(idNum)) {
@@ -360,8 +361,9 @@ if (st === "REM_ADD_DESC") {
     sessions[from].state = "NONE";
     return;
   }
+  dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset()); // Ajuste de zona horaria.
   const newId = await agregarRecordatorio(desc, dt.toISOString().slice(0, 19).replace("T", " "));
-  await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy HH:mm")}`);
+  await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy hh:mm a")}`);
   sessions[from].state = "NONE";
   return;
 }
@@ -437,7 +439,7 @@ if (buttonId === "R_LIST") {
   } else {
     let msg = "Recordatorios pendientes:\n";
     recs.forEach((r, index) => {
-      msg += `${index + 1}. ${r.descripcion} (${format(new Date(r.fecha_hora), "dd/MM/yyyy HH:mm")})\n`;
+      msg += `${index + 1}. ${r.descripcion} (${format(new Date(r.fecha_hora), "dd/MM/yyyy hh:mm a")})\n`;
     });
     await sendWhatsAppMessage(from, msg);
   }
@@ -591,19 +593,22 @@ function parseCustomDate(str) {
   const now = new Date();
 
   if (lower === "hoy") {
+    now.setHours(0, 0, 0, 0);
     return now;
   } else if (lower === "mañana") {
     now.setDate(now.getDate() + 1);
+    now.setHours(0, 0, 0, 0);
     return now;
   } else if (lower === "pasado mañana") {
     now.setDate(now.getDate() + 2);
+    now.setHours(0, 0, 0, 0);
     return now;
   }
 
   const dateMatch = lower.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
   if (dateMatch) {
     const [day, month, year] = dateMatch[0].split("/");
-    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00`);
   }
 
   return null;
