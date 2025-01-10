@@ -64,7 +64,7 @@ async function initDB() {
   console.log("Tablas 'tareas' y 'recordatorios' creadas/verificadas.");
 }
 
-await initDB().catch((e) => console.error("Error initDB:", e));
+await initDB().catch((e) => console.error("Error initDB:", e))
 
 /***********************************************
  * 3. Lógica para Tareas
@@ -114,7 +114,7 @@ cron.schedule("0 10 * * *", async () => {
 });
 
 cron.schedule("0 22 * * *", async () => {
-  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenosNochesMensajes.length)];
+  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenasNochesMensajes.length)];
   await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
 }, {
   timezone: "America/Cancun"
@@ -136,35 +136,14 @@ const frasesComunes = {
   "adiós": "Adiós, ¡cuídate mucho! 🌟"
 };
 
-function convertToCancunTime(date) {
-  const options = { timeZone: "America/Cancun", hour12: false };
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    ...options,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const parts = formatter.formatToParts(date).reduce((acc, part) => {
-    acc[part.type] = part.value;
-    return acc;
-  }, {});
-  return new Date(
-    `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
-  );
-}
-
-
-
 /***********************************************
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
+  const localTime = new Date(fechaHora.getTime() - fechaHora.getTimezoneOffset() * 60000);
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
-    [desc, fechaHora]
+    [desc, localTime]
   );
   return result.insertId;
 }
@@ -175,7 +154,7 @@ async function listarRecordatoriosPendientes() {
   `);
 
   return rows.map((row) => {
-    const localTime = convertToCancunTime(row.fecha_hora);
+    const localTime = new Date(row.fecha_hora.getTime() + row.fecha_hora.getTimezoneOffset() * 60000);
     return {
       ...row,
       fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"),
@@ -260,6 +239,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 /***********************************************
  * 6. Manejo principal de mensajes
