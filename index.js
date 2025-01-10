@@ -114,7 +114,7 @@ cron.schedule("0 10 * * *", async () => {
 });
 
 cron.schedule("0 22 * * *", async () => {
-  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenasNochesMensajes.length)];
+  const mensaje = buenasNochesMensajes[Math.floor(Math.random() * buenosNochesMensajes.length)];
   await sendWhatsAppMessage(MY_WHATSAPP_NUMBER, mensaje);
 }, {
   timezone: "America/Cancun"
@@ -140,10 +140,10 @@ const frasesComunes = {
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
-  const localTime = fechaHora instanceof Date ? new Date(fechaHora.getTime() - fechaHora.getTimezoneOffset() * 60000) : fechaHora;
+  const utcTime = fechaHora instanceof Date ? new Date(fechaHora.getTime() - fechaHora.getTimezoneOffset() * 60000) : fechaHora;
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
-    [desc, localTime]
+    [desc, utcTime]
   );
   return result.insertId;
 }
@@ -239,6 +239,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
 /***********************************************
