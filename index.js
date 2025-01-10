@@ -155,13 +155,11 @@ async function listarRecordatoriosPendientes() {
     SELECT * FROM recordatorios WHERE enviado = 0 ORDER BY fecha_hora ASC
   `);
 
-  // Formatear las horas directamente
-  return rows.map((row) => {
-    return {
-      ...row,
-      fecha_hora: format(row.fecha_hora, "dd/MM/yyyy hh:mm a"),
-    };
-  });
+  // Usar directamente la hora de la base de datos sin ajustes adicionales
+  return rows.map((row) => ({
+    ...row,
+    fecha_hora: format(new Date(row.fecha_hora), "dd/MM/yyyy hh:mm a"), // No se añade ni resta tiempo aquí
+  }));
 }
 
 
@@ -414,7 +412,7 @@ async function handleButtonReply(from, buttonId) {
     return;
   }
 
- // Submenú Recordatorios
+  // Submenú Recordatorios
   if (buttonId === "R_LIST") {
   const recs = await listarRecordatoriosPendientes();
   if (recs.length === 0) {
@@ -422,12 +420,13 @@ async function handleButtonReply(from, buttonId) {
   } else {
     let msg = "Recordatorios pendientes:\n";
     recs.forEach((r, index) => {
-      msg += `${index + 1}. ${r.descripcion} (${r.fecha_hora})\n`;
+      msg += `${index + 1}. ${r.descripcion} (${r.fecha_hora})\n`; // No modificar la fecha ya formateada
     });
     await sendWhatsAppMessage(from, msg);
   }
   return;
 }
+
 
 if (buttonId === "R_ADD") {
   sessions[from] = { state: "REM_ADD_DATE" };
