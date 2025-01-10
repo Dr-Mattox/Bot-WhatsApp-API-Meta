@@ -139,13 +139,17 @@ const frasesComunes = {
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
-  // Guardar la hora proporcionada sin modificaciones
+  // Ajustar desfase manual de 5 horas
+  const adjustedTime = new Date(fechaHora);
+  adjustedTime.setHours(adjustedTime.getHours() - 5);
+
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
-    [desc, fechaHora]
+    [desc, adjustedTime]
   );
   return result.insertId;
 }
+
 
 async function listarRecordatoriosPendientes() {
   const [rows] = await pool.query(`
@@ -156,10 +160,11 @@ async function listarRecordatoriosPendientes() {
     const localTime = new Date(row.fecha_hora);
     return {
       ...row,
-      fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"),
+      fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"), // Mostrar hora correcta
     };
   });
 }
+
 
 async function eliminarRecordatorio(id) {
   const [result] = await pool.query(
@@ -339,11 +344,13 @@ if (st === "REM_ADD_DESC") {
     sessions[from].state = "NONE";
     return;
   }
-  const newId = await agregarRecordatorio(desc, dt);
+
+  const newId = await agregarRecordatorio(desc, dt); // Ya no se aplica ajuste aquí
   await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy hh:mm a")}`);
   sessions[from].state = "NONE";
   return;
 }
+
 
 if (st === "REM_DEL_INDEX") {
   const index = parseInt(textBody, 10) - 1;
