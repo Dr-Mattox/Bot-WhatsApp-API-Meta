@@ -408,7 +408,7 @@ async function handleButtonReply(from, buttonId) {
     return;
   }
 
-  // Submenú Recordatorios
+ // Submenú Recordatorios
 if (buttonId === "R_LIST") {
   const recs = await listarRecordatoriosPendientes();
   if (recs.length === 0) {
@@ -416,7 +416,7 @@ if (buttonId === "R_LIST") {
   } else {
     let msg = "Recordatorios pendientes:\n";
     recs.forEach((r, index) => {
-      msg += `${index + 1}. ${r.descripcion} (${format(new Date(r.fecha_hora), "dd/MM/yyyy hh:mm a")})\n`;
+      msg += `${index + 1}. ${r.descripcion} (${r.fecha_hora})\n`;
     });
     await sendWhatsAppMessage(from, msg);
   }
