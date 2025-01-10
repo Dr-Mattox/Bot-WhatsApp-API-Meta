@@ -9,7 +9,6 @@ import mysql from "mysql2/promise";
 import cron from "node-cron";
 import { format } from "date-fns";
 
-
 /***********************************************
  * 1. Variables de entorno y configuración
  ***********************************************/
@@ -140,6 +139,7 @@ const frasesComunes = {
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
+  // Guardar la hora proporcionada sin modificaciones
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
     [desc, fechaHora]
