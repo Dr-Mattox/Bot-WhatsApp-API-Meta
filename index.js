@@ -156,11 +156,11 @@ async function listarRecordatoriosPendientes() {
     SELECT * FROM recordatorios WHERE enviado = 0 ORDER BY fecha_hora ASC
   `);
 
+  // Formatear las horas sin ajustes adicionales
   return rows.map((row) => {
-    const localTime = new Date(row.fecha_hora);
     return {
       ...row,
-      fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"), // Mostrar hora correcta
+      fecha_hora: format(new Date(row.fecha_hora), "dd/MM/yyyy hh:mm a"),
     };
   });
 }
@@ -416,7 +416,7 @@ async function handleButtonReply(from, buttonId) {
   }
 
  // Submenú Recordatorios
-if (buttonId === "R_LIST") {
+  if (buttonId === "R_LIST") {
   const recs = await listarRecordatoriosPendientes();
   if (recs.length === 0) {
     await sendWhatsAppMessage(from, "No hay recordatorios pendientes.");
