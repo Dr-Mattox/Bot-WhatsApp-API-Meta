@@ -140,10 +140,9 @@ const frasesComunes = {
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
-  const localTime = fechaHora instanceof Date ? fechaHora : new Date(fechaHora); // Asegurar que sea una instancia de Date
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
-    [desc, localTime]
+    [desc, fechaHora]
   );
   return result.insertId;
 }
@@ -239,7 +238,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
-
 
 /***********************************************
  * 6. Manejo principal de mensajes
@@ -341,8 +339,7 @@ if (st === "REM_ADD_DESC") {
     sessions[from].state = "NONE";
     return;
   }
-  dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset()); // Ajuste de zona horaria.
-  const newId = await agregarRecordatorio(desc, dt.toISOString().slice(0, 19).replace("T", " "));
+  const newId = await agregarRecordatorio(desc, dt);
   await sendWhatsAppMessage(from, `Recordatorio guardado: ${desc} para el ${format(dt, "dd/MM/yyyy hh:mm a")}`);
   sessions[from].state = "NONE";
   return;
