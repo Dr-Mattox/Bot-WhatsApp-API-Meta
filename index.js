@@ -141,7 +141,7 @@ const frasesComunes = {
 async function agregarRecordatorio(desc, fechaHora) {
   // Ajustar desfase manual de 5 horas
   const adjustedTime = new Date(fechaHora);
-  adjustedTime.setHours(adjustedTime.getHours() - 5);
+  adjustedTime.setHours(adjustedTime.getHours() + 5);
 
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
