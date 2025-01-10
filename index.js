@@ -140,10 +140,9 @@ const frasesComunes = {
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
-  const utcTime = fechaHora instanceof Date ? new Date(fechaHora.getTime() - fechaHora.getTimezoneOffset() * 60000) : fechaHora;
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
-    [desc, utcTime]
+    [desc, fechaHora]
   );
   return result.insertId;
 }
@@ -239,7 +238,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
-
 
 
 /***********************************************
