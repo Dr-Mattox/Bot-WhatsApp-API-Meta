@@ -140,7 +140,7 @@ const frasesComunes = {
  * 4. Lógica para Recordatorios + node-cron
  ***********************************************/
 async function agregarRecordatorio(desc, fechaHora) {
-  const localTime = new Date(fechaHora.getTime() - fechaHora.getTimezoneOffset() * 60000);
+  const localTime = fechaHora instanceof Date ? new Date(fechaHora.getTime() - fechaHora.getTimezoneOffset() * 60000) : fechaHora;
   const [result] = await pool.query(
     "INSERT INTO recordatorios (descripcion, fecha_hora, enviado) VALUES (?, ?, 0)",
     [desc, localTime]
@@ -154,7 +154,7 @@ async function listarRecordatoriosPendientes() {
   `);
 
   return rows.map((row) => {
-    const localTime = new Date(row.fecha_hora.getTime() + row.fecha_hora.getTimezoneOffset() * 60000);
+    const localTime = new Date(row.fecha_hora);
     return {
       ...row,
       fecha_hora: format(localTime, "dd/MM/yyyy hh:mm a"),
